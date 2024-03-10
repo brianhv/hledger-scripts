@@ -61,20 +61,20 @@ data MinimalTransaction = MinimalTransaction
 showTree :: Map Text [MinimalTransaction] -> Tree AccountName -> Text
 showTree txnsByAccount accountTree = fst $ doShowTree 0 accountTree
   where
-    {- doShowTree is responsible for recursing over the list. Each invocation returns a tuple:
-     -   fst: The text output for the tree
+    {- doShowTree is responsible for recursing over the tree. Each invocation returns a tuple:
+     -   fst: The text output for the subtree
      -   snd: The sum of the transactions for the subtree
      -}
     doShowTree :: Int -> Tree AccountName -> (Text, MixedAmount)
     doShowTree depth subtree =
       {- Here's what this intercalation produces:
-       -   +------ prefixedAccountName:        Income
-       -   | +---- prefixedAccountName:          Income:First Level
-       - s | |     transactionsInNodeText:          2024-01-01  First level transaction                         $-1.00
-       - u | | +-- prefixedAccountName:             Income:First Level:First Category
+       -   +------ indentedAccountName:        Income
+       -   | +---- indentedAccountName:          Income:First Level
+       - s | |     transactionsInNodeText:             2024-01-01  First level transaction                      $-1.00
+       - u | | +-- indentedAccountName:             Income:First Level:First Category
        - b | | |   transactionsInNodeText:             2024-02-01  First category transaction                   $-1.82
        - t | | +-- sumOfTransactionsText:                Total for Income:First Level:First Category            $-1.82
-       - r | | +-- prefixedAccountName:             Income:Second Level:Second Category
+       - r | | +-- indentedAccountName:             Income:First Level:Second Category
        - e | | |   transactionsInNodeText:             2024-02-03  Second category transaction                  $-3.64
        - e | | |                                       2024-02-05  Another transaction                          $-5.87
        - s | | +-- sumOfTransactionsText:                         Total for Income:First Level:Second Category  $-9.51
@@ -83,7 +83,7 @@ showTree txnsByAccount accountTree = fst $ doShowTree 0 accountTree
        -}
       ( intercalate
           newline
-          ( [prefixedAccountName]
+          ( [indentedAccountName]
               {- Don't include transactions at this level if there aren't any; otherwise we get a stray newline. -}
               ++ [transactionsInNodeText | not (null transactionsInNode)]
               {- Same, but for when there aren't any subtrees -}
@@ -97,7 +97,7 @@ showTree txnsByAccount accountTree = fst $ doShowTree 0 accountTree
         {- The raw account name; can be used for display and lookups -}
         accountName :: Text = rootLabel subtree
         {- The account name prefixed with the indentation level -}
-        prefixedAccountName :: Text = intercalate (pack "") [pack $ replicate (depth * 3) ' ', accountName]
+        indentedAccountName :: Text = intercalate (pack "") [pack $ replicate (depth * 3) ' ', accountName]
         {- The text representing the transactions at this level of the tree -}
         transactionsInNodeText :: Text = intercalate newline $ map (pack . minimalToStr) (reverse transactionsInNode)
         {- The transactions in this level of the tree -}
