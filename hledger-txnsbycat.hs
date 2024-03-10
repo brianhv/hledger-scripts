@@ -61,12 +61,26 @@ data MinimalTransaction = MinimalTransaction
 showTree :: Map Text [MinimalTransaction] -> Tree AccountName -> Text
 showTree txnsByAccount accountTree = fst $ doShowTree 0 accountTree
   where
-    {- Returns a tuple:
+    {- doShowTree is responsible for recursing over the list. Each invocation returns a tuple:
      -   fst: The text output for the tree
      -   snd: The sum of the transactions for the subtree
      -}
     doShowTree :: Int -> Tree AccountName -> (Text, MixedAmount)
     doShowTree depth subtree =
+      {- Here's what this intercalation produces:
+       -   +------ prefixedAccountName:        Income
+       -   | +---- prefixedAccountName:          Income:First Level
+       - s | |     transactionsInNodeText:          2024-01-01  First level transaction                         $-1.00
+       - u | | +-- prefixedAccountName:             Income:First Level:First Category
+       - b | | |   transactionsInNodeText:             2024-02-01  First category transaction                   $-1.82
+       - t | | +-- sumOfTransactionsText:                Total for Income:First Level:First Category            $-1.82
+       - r | | +-- prefixedAccountName:             Income:Second Level:Second Category
+       - e | | |   transactionsInNodeText:             2024-02-03  Second category transaction                  $-3.64
+       - e | | |                                       2024-02-05  Another transaction                          $-5.87
+       - s | | +-- sumOfTransactionsText:                         Total for Income:First Level:Second Category  $-9.51
+       -   | +---- sumOfTransactionsText:                                         Total for Income:First Level $-12.33
+       -   +------ sumOfTransactionsText:                                                     Total for Income $-12.33
+       -}
       ( intercalate
           newline
           ( [prefixedAccountName]
