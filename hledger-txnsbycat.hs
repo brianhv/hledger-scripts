@@ -8,17 +8,15 @@
 --
 -- {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
-import Control.Monad (join)
 import Data.List (find)
-import Data.Map (Map, assocs, fromListWith, keys, lookup)
-import Data.Maybe (fromMaybe)
+import Data.Map (Map, fromListWith, keys, lookup)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.String (String)
 import Data.Text (Text, intercalate, isPrefixOf, pack, unpack)
 import Data.Text.IO (putStrLn)
 import Data.Time.Calendar (showGregorian)
-import Data.Tree (Tree, drawTree, rootLabel, subForest)
+import Data.Tree (Tree, rootLabel, subForest)
 import Hledger.Cli hiding (main)
-import System.Environment (getArgs)
 import Text.Printf (printf)
 import Prelude hiding (lookup)
 
@@ -49,7 +47,7 @@ groupedtxnsstatement :: CliOpts -> Journal -> IO ()
 groupedtxnsstatement cliopts j = Data.Text.IO.putStrLn $ showTree txnsByAccount accountTree
   where
     entries = (entriesReport $ reportspec_ cliopts) j
-    minimalTxns = concatMap txnToMinimal entries
+    minimalTxns = mapMaybe txnToMinimal entries
     txnsByAccount = fromListWith (++) (map (\t -> (mtAccount t, [t])) minimalTxns)
     accountTree = accountNameTreeFrom $ keys txnsByAccount
 
@@ -120,10 +118,15 @@ minimalToStr t =
     (unpack $ mtDescription t)
     (showMixedAmount $ mtAmount t)
 
-txnToMinimal :: Transaction -> [MinimalTransaction]
-txnToMinimal t = case incomeOrExpensePosting (tpostings t) of
-  Just p -> [MinimalTransaction (Data.Text.pack $ showGregorian $ tdate t) (tdescription t) (paccount p) (pamount p)]
-  Nothing -> []
+txnToMinimal :: Transaction -> Maybe MinimalTransaction
+txnToMinimal t = do
+  posting <- incomeOrExpensePosting (tpostings t)
+  return $
+    MinimalTransaction
+      (Data.Text.pack $ showGregorian $ tdate t)
+      (tdescription t)
+      (paccount posting)
+      (pamount posting)
 
 {- Finds the posting in the transaction that corresponds to an Income or Expense account -}
 incomeOrExpensePosting :: [Posting] -> Maybe Posting
