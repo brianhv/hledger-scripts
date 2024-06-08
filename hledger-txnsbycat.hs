@@ -46,8 +46,8 @@ main = do
 groupedtxnsstatement :: CliOpts -> Journal -> IO ()
 groupedtxnsstatement cliopts j = Data.Text.IO.putStrLn $ showTree txnsByAccount accountTree
   where
-    entries = (entriesReport $ reportspec_ cliopts) j
-    minimalTxns = mapMaybe txnToMinimal entries
+    entries :: [Transaction] = (entriesReport $ reportspec_ cliopts) j
+    minimalTxns :: [MinimalTransaction] = concatMap txnToMinimal entries
     txnsByAccount = fromListWith (++) (map (\t -> (mtAccount t, [t])) minimalTxns)
     accountTree = accountNameTreeFrom $ keys txnsByAccount
 
@@ -132,7 +132,7 @@ minimalToStr t =
     (unpack $ mtDescription t)
     (showMixedAmount $ negate $ mtAmount t)
 
-txnToMinimal :: Transaction -> Maybe MinimalTransaction
+txnToMinimal :: Transaction -> [MinimalTransaction]
 txnToMinimal t = do
   posting <- incomeOrExpensePosting (tpostings t)
   return $
@@ -142,6 +142,6 @@ txnToMinimal t = do
       (paccount posting)
       (pamount posting)
 
-{- Finds the posting in the transaction that corresponds to an Income or Expense account -}
-incomeOrExpensePosting :: [Posting] -> Maybe Posting
-incomeOrExpensePosting = find (\p -> isPrefixOf (pack "Expenses") (paccount p) || isPrefixOf (pack "Income") (paccount p))
+{- Finds the postings in the transaction that correspond to an Income or Expense account -}
+incomeOrExpensePosting :: [Posting] -> [Posting]
+incomeOrExpensePosting = filter (\p -> isPrefixOf (pack "Expenses") (paccount p) || isPrefixOf (pack "Income") (paccount p))
