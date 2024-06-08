@@ -103,7 +103,7 @@ showTree txnsByAccount accountTree = fst $ doShowTree 0 accountTree
         {- The transactions in this level of the tree -}
         transactionsInNode :: [MinimalTransaction] = fromMaybe [] $ lookup accountName txnsByAccount
         {- The sum of the transactions at this level of the tree -}
-        sumOfTxnsInNode :: MixedAmount = sum $ map mtAmount transactionsInNode
+        sumOfTxnsInNode :: MixedAmount = sum $ map (negate . mtAmount) transactionsInNode
         {- The sum of the transactions in all subtrees of this node -}
         sumOfSubaccounts :: MixedAmount = sum $ map snd subtrees
         {- The (text, sum) pair for each subtree of this node -}
@@ -130,7 +130,7 @@ minimalToStr t =
     "            %s  %-40s %10s"
     (unpack $ mtDate t)
     (unpack $ mtDescription t)
-    (showMixedAmount $ mtAmount t)
+    (showMixedAmount $ negate $ mtAmount t)
 
 txnToMinimal :: Transaction -> Maybe MinimalTransaction
 txnToMinimal t = do
