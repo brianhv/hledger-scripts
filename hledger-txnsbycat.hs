@@ -12,11 +12,14 @@ import Data.List (find)
 import Data.Map (Map, fromListWith, keys, lookup)
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.String (String)
-import Data.Text (Text, intercalate, isPrefixOf, pack, unpack)
+import Data.Text (Text, intercalate, isPrefixOf, pack, unpack, strip)
 import Data.Text.IO (putStrLn)
 import Data.Time.Calendar (showGregorian)
 import Data.Tree (Tree, rootLabel, subForest)
-import Hledger.Cli hiding (main)
+import Hledger.Cli (AccountName, Posting, Transaction, MixedAmount, Journal, CliOpts,
+                    pcomment, paccount, showMixedAmount, tpostings, reportspec_, withJournalDo,
+                    entriesReport, argsFlag, getHledgerCliOpts, hledgerCommandMode,
+                    generalflagsgroup1, accountNameTreeFrom, tdate, pamount, tdescription)
 import Text.Printf (printf)
 import Prelude hiding (lookup)
 
@@ -138,9 +141,12 @@ txnToMinimal t = do
   return $
     MinimalTransaction
       (Data.Text.pack $ showGregorian $ tdate t)
-      (tdescription t)
+      (minimalDescription t posting)
       (paccount posting)
       (pamount posting)
+
+minimalDescription :: Transaction -> Posting -> Text
+minimalDescription t p = if pcomment p /= pack "" then strip (pcomment p) else tdescription t
 
 {- Finds the postings in the transaction that correspond to an Income or Expense account -}
 incomeOrExpensePosting :: [Posting] -> [Posting]
